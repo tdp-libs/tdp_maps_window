@@ -67,23 +67,6 @@ struct MapWindow::Private
   }
 
   //################################################################################################
-  static QGLFormat glFormat()
-  {
-    QGLFormat glf = QGLFormat::defaultFormat();
-
-#ifdef TDP_OSX
-    glf.setProfile(QGLFormat::CompatibilityProfile);
-    glf.setVersion(2, 1);
-    glf.setSampleBuffers(true);
-    glf.setSamples(4);
-#else
-    glf.setSampleBuffers(true);
-    glf.setSamples(4);
-#endif
-    return glf;
-  }
-
-  //################################################################################################
   static tp_maps::Button convertMouseButton(Qt::MouseButton button)
   {
     switch(button)
@@ -101,12 +84,23 @@ MapWindow::MapWindow(QWindow* parent):
   QOpenGLWindow(QOpenGLWindow::NoPartialUpdate, parent),
   d(new Private(this))
 {
+  QSurfaceFormat format;
 
-//  QSurfaceFormat format;
-//  format.setMajorVersion(3);
-//  format.setMinorVersion(2);
-//  QSurfaceFormat::setDefaultFormat(format);
-//  setFormat(format);
+#ifdef TDP_IOS
+  format.setMajorVersion(3);
+  format.setMinorVersion(2);
+#elif defined TDP_OSX
+  format.setProfile(QSurfaceFormat::CompatibilityProfile);
+  format.setMajorVersion(2);
+  format.setMinorVersion(1);
+#else
+
+#endif
+
+  format.setSamples(4);
+
+  QSurfaceFormat::setDefaultFormat(format);
+  setFormat(format);
 
   setSurfaceType(QWindow::OpenGLSurface);
 }
