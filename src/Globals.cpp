@@ -4,8 +4,10 @@
 
 namespace tdp_maps_window
 {
-#warning move this somewhere common
+
 //##################################################################################################
+//Warning: This method is duplicated in both tdp_maps_window and tdp_maps_widget, please make
+//changes to both.
 tp_maps::TextureData convertTexture(const QImage& image)
 {
   tp_maps::TextureData textureData;
