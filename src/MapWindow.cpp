@@ -18,7 +18,7 @@ class Map_lt : public tp_maps::Map
 public:
   //################################################################################################
   Map_lt(MapWindow* mapWidget_):
-    tp_maps::Map(false)
+    tp_maps::Map(true)
   {
     mapWidget = mapWidget_;
   }
