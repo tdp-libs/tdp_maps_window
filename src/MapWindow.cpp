@@ -31,15 +31,21 @@ public:
 
   // GL functions
   //################################################################################################
-  virtual void makeCurrent()
+  void makeCurrent() override
   {
     mapWidget->makeCurrent();
   }
 
   //################################################################################################
-  virtual void update()
+  void update() override
   {
     mapWidget->update();
+  }
+
+  //################################################################################################
+  float pixelScale() override
+  {
+    return float(mapWidget->devicePixelRatioF());
   }
 
 private:
