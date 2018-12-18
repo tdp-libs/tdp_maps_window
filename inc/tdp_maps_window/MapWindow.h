@@ -19,35 +19,38 @@ public:
   MapWindow(QWindow* parent = nullptr);
 
   //################################################################################################
-  ~MapWindow();
+  ~MapWindow() override;
 
   //################################################################################################
   tp_maps::Map* map();
 
 protected:
   //################################################################################################
-  virtual void initializeGL();
+  void initializeGL() override;
 
   //################################################################################################
-  virtual void resizeGL(int width, int height);
+  void resizeGL(int width, int height) override;
 
   //################################################################################################
-  virtual void paintGL();
+  void paintGL() override;
 
   //################################################################################################
-  virtual void mousePressEvent(QMouseEvent* event);
+  void mousePressEvent(QMouseEvent* event) override;
 
   //################################################################################################
-  virtual void mouseMoveEvent(QMouseEvent* event);
+  void mouseMoveEvent(QMouseEvent* event) override;
 
   //################################################################################################
-  virtual void mouseReleaseEvent(QMouseEvent* event);
+  void mouseReleaseEvent(QMouseEvent* event) override;
 
   //################################################################################################
-  virtual void wheelEvent(QWheelEvent* event);
+  void wheelEvent(QWheelEvent* event) override;
 
   //################################################################################################
-  virtual void mouseDoubleClickEvent(QMouseEvent* event);
+  void mouseDoubleClickEvent(QMouseEvent* event) override;
+
+  //################################################################################################
+  void touchEvent(QTouchEvent* event) override;
 
 private:
   struct Private;

@@ -8,6 +8,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimer>
+#include <QCoreApplication>
 
 namespace tdp_maps_window
 {
@@ -51,12 +52,25 @@ public:
 private:
   MapWindow* mapWidget;
 };
+
+//##################################################################################################
+float pinchDelta(const QTouchEvent::TouchPoint& p0, const QTouchEvent::TouchPoint& p1)
+{
+  return glm::distance(glm::vec2{p0.pos().x(), p0.pos().y()}, glm::vec2{p1.pos().x(), p1.pos().y()});
 }
 
+}
+
+//##################################################################################################
 struct MapWindow::Private
 {
   MapWindow* q;
   Map_lt* map;
+
+  float pinchDelta{0.0f};
+
+  bool pinchActive{false};
+  bool mouseActive{false};
 
   //################################################################################################
   Private(MapWindow* q_):
@@ -109,6 +123,9 @@ MapWindow::MapWindow(QWindow* parent):
   setFormat(format);
 
   setSurfaceType(QWindow::OpenGLSurface);
+
+  QCoreApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents, false);
+  QCoreApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents, false);
 }
 
 //##################################################################################################
@@ -150,7 +167,7 @@ void MapWindow::paintGL()
   d->map->paintGL();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWindow::mousePressEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
@@ -163,7 +180,7 @@ void MapWindow::mousePressEvent(QMouseEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWindow::mouseMoveEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
@@ -176,7 +193,7 @@ void MapWindow::mouseMoveEvent(QMouseEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWindow::mouseReleaseEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
@@ -189,7 +206,7 @@ void MapWindow::mouseReleaseEvent(QMouseEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWindow::wheelEvent(QWheelEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
@@ -203,7 +220,7 @@ void MapWindow::wheelEvent(QWheelEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWindow::mouseDoubleClickEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::DoubleClick);
@@ -214,5 +231,121 @@ void MapWindow::mouseDoubleClickEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+}
+
+//##################################################################################################
+void MapWindow::touchEvent(QTouchEvent* event)
+{
+  QList<QTouchEvent::TouchPoint> touchPoints = event->touchPoints();
+
+  switch (event->type())
+  {
+  case QEvent::TouchBegin: //-----------------------------------------------------------------------
+  {
+    if(touchPoints.size() == 1)
+    {
+      d->mouseActive = true;
+
+      const QTouchEvent::TouchPoint& p0 = touchPoints.at(0);
+      tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
+
+      e.button = tp_maps::Button::LeftButton;
+      e.pos.x = int(p0.pos().x());
+      e.pos.y = int(p0.pos().y());
+
+      d->map->mouseEvent(e);
+    }
+    else
+    {
+
+    }
+
+    break;
+  }
+
+  case QEvent::TouchUpdate: //----------------------------------------------------------------------
+  {
+    if(touchPoints.size() == 2)
+    {
+      const QTouchEvent::TouchPoint& p0 = touchPoints.at(0);
+      const QTouchEvent::TouchPoint& p1 = touchPoints.at(1);
+
+      if(d->pinchActive)
+      {
+        float delta = pinchDelta(p0, p1);
+        auto dd = delta - d->pinchDelta;
+        if(std::fabs(dd)>16.0f)
+        {
+          d->pinchDelta = delta;
+
+          tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
+          e.pos.x = int((p0.pos().x()+p1.pos().x())/2.0);
+          e.pos.y = int((p0.pos().y()+p1.pos().y())/2.0);
+          e.delta = int(dd/8.0f);
+          d->map->mouseEvent(e);
+        }
+      }
+      else
+      {
+        d->pinchDelta = pinchDelta(p0, p1);
+        d->pinchActive = true;
+      }
+
+      if(d->mouseActive)
+      {
+        d->mouseActive = false;
+
+        tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
+
+        e.button = tp_maps::Button::LeftButton;
+        e.pos.x = int(p0.pos().x());
+        e.pos.y = int(p0.pos().y());
+
+        d->map->mouseEvent(e);
+      }
+    }
+
+    if(d->mouseActive && !touchPoints.isEmpty())
+    {
+      const QTouchEvent::TouchPoint& p0 = touchPoints.at(0);
+      tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
+
+      e.button = tp_maps::Button::LeftButton;
+      e.pos.x = int(p0.pos().x());
+      e.pos.y = int(p0.pos().y());
+
+      d->map->mouseEvent(e);
+    }
+
+    break;
+  }
+
+  case QEvent::TouchEnd: //-------------------------------------------------------------------------
+  {
+    if(d->mouseActive && !touchPoints.isEmpty())
+    {
+      const QTouchEvent::TouchPoint& p0 = touchPoints.at(0);
+
+      d->mouseActive = false;
+
+      tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
+
+      e.button = tp_maps::Button::LeftButton;
+      e.pos.x = int(p0.pos().x());
+      e.pos.y = int(p0.pos().y());
+
+      d->map->mouseEvent(e);
+    }
+
+    d->pinchActive = false;
+    d->mouseActive = false;
+    break;
+  }
+
+  default:
+    break;
+  }
+
+  event->accept();
 }
 }
