@@ -18,11 +18,12 @@ tp_maps::TextureData convertTexture(const QImage& image)
   textureData.w = img.width();
   textureData.h = img.height();
 
-  textureData.data = new TPPixel[size_t(textureData.w * textureData.h)];
+  auto newData = new TPPixel[size_t(textureData.w * textureData.h)];
+  textureData.data = newData;
   {
     const uchar* p = img.bits();
     const uchar* pMax = p + (img.bytesPerLine() * img.height());
-    TPPixel* dst = textureData.data;
+    TPPixel* dst = newData;
     for(; p<pMax; p+=4, dst++)
     {
       dst->r = p[2];
